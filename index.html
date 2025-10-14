@@ -65,7 +65,12 @@
     @media(max-width:980px){.grid{grid-template-columns:repeat(6,1fr)}.form{grid-template-columns:repeat(6,1fr)}}
     @media(max-width:560px){.grid,.form{grid-template-columns:repeat(2,1fr)} .title h1{font-size:17px}}
   
-.table-scroll{width:100%;overflow-x:auto}
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto; /* ← اضافه شد */
+  max-height: 360px; /* ← ارتفاع مناسب برای اسکرول عمودی */
+}
 .table-scroll table{min-width:700px}
 @media(max-width:560px){
   .table-scroll table{min-width:600px;font-size:13px}
@@ -182,7 +187,7 @@
   </div>
 
   <!-- جدول تراکنش‌ها -->
-  <div class="card table-wrapper" style="max-height:420px"><div class="table-scroll">
+<div class="card table-wrapper"><div class="table-scroll">
     <table id="table">
       <thead>
         <tr>
