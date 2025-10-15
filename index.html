@@ -24,6 +24,7 @@
       --main:#6aa0ff; --accent:#22c55e; --danger:#ff6b6b; --warn:#ffd166;
       --bg:#0b1220; --card:#111827; --text:#e5e7eb; --muted:#9aa4b2; --ring:#1f2a44;
     }
+
     *{box-sizing:border-box}
     html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Sahel',Tahoma,Arial,sans-serif}
     a{color:var(--main);text-decoration:none}
@@ -68,8 +69,8 @@
 .table-scroll {
   width: 100%;
   overflow-x: auto;
-  overflow-y: auto; /* ← اضافه شد برای اسکرول عمودی */
-  max-height: 360px; /* ← ارتفاع مناسب برای فعال شدن اسکرول عمودی */
+  overflow-y: auto; /* ← اضافه شد */
+  max-height: 360px; /* ← ارتفاع مناسب برای اسکرول عمودی */
 }
 .table-scroll table{min-width:700px}
 @media(max-width:560px){
@@ -82,6 +83,23 @@
   .form{grid-template-columns:repeat(1,1fr)!important}
   .field{grid-column: span 12 !important}
   .row{flex-direction:column;align-items:stretch}
+}
+
+/* افکت hover برای دکمه‌های اصلی */
+.btn:hover {
+  transform: scale(1.05); /* کمی بزرگ‌تر شدن */
+  transition: transform 0.2s ease; /* نرمی حرکت */
+}
+
+/* افکت hover برای دکمه‌های ghost */
+.btn-ghost:hover {
+  background-color: var(--ring); /* تغییر رنگ پس‌زمینه */
+  transition: background-color 0.2s ease;
+}
+
+/* افکت کلیک برای دکمه‌ها */
+.btn:active {
+  transform: scale(0.97); /* کمی کوچک‌تر شدن هنگام کلیک */
 }
 
 </style>
@@ -299,7 +317,13 @@ const fmt = n => (Number(n)||0).toLocaleString('fa-IR');
 const todayStr = () => new Date().toISOString().slice(0,10);
 const monthKey = (dStr) => (dStr||todayStr()).slice(0,7);
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function categoryLabel(c){ return c==='income'?'درآمد':c==='expense'?'هزینه':c==='saving'?'پس‌انداز':c; }
+function categoryLabel(c){
+  if(c==='income') return '💰 درآمد';
+  if(c==='expense') return '🛒 هزینه';
+  if(c==='saving') return '🏦 پس‌انداز';
+  return c;
+}
+
 
 // ======== PWA Register ========
 (function registerPWA(){
@@ -368,6 +392,7 @@ function renderRecurring(){
   els.rcBody.innerHTML = '';
   state.recurring.forEach(rc=>{
     const tr = document.createElement('tr');
+tr.className = t.category + '-row';
     tr.innerHTML = `<td>${escapeHtml(rc.desc||'')}</td><td>${fmt(rc.amount)}</td><td>${categoryLabel(rc.category)}</td>
     <td>${escapeHtml(rc.subcat||'')}</td><td>${escapeHtml(rc.wallet||'اصلی')}</td><td>${rc.frequency}</td>
     <td><input type="checkbox" ${rc.active!==false?'checked':''} /></td>
@@ -428,9 +453,11 @@ function renderTable(list){
   els.tbody.innerHTML='';
   if(!list.length){
     const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan=7; td.textContent='موردی یافت نشد.'; tr.appendChild(td); els.tbody.appendChild(tr); return;
-  }
+  tr.className = t.category + '-row';
+}
   for(const t of list){
     const tr = document.createElement('tr');
+tr.className = t.category + '-row';
     tr.innerHTML = `
       <td>${t.date}</td>
       <td>${categoryLabel(t.category)}</td>
@@ -693,6 +720,7 @@ function renderStats(list){
   els.sumSaving.textContent = fmt(st.saving);
   return st;
 }
+
 function applyAll(){
   const list = filtered();
   renderTable(list);
@@ -794,14 +822,6 @@ function mountDatepicker(container, inputFa, inputIso, initialIso){
   render();
 }
 // Example: mountDatepicker(document.getElementById('datepicker'), document.getElementById('dateFa'), document.getElementById('dateIso'), '');
-</script>
-<script>
-// ثبت Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(() => {
-    console.log('✅ Service Worker ثبت شد');
-  });
-}
 </script>
 
 </body>
