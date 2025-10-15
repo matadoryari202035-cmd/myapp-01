@@ -795,6 +795,14 @@ function mountDatepicker(container, inputFa, inputIso, initialIso){
 }
 // Example: mountDatepicker(document.getElementById('datepicker'), document.getElementById('dateFa'), document.getElementById('dateIso'), '');
 </script>
+<script>
+// ثبت Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(() => {
+    console.log('✅ Service Worker ثبت شد');
+  });
+}
+</script>
 
 </body>
 </html>
