@@ -683,7 +683,7 @@ function buildRecurringReminders() {
       reminders.push({
         id: 'rc_' + rc.id + '_' + nextDue,
         title: `هشدار: نزدیک شدن به موعد تراکنش: ${escapeHtml(rc.desc)}`,
-        text: `موعد تراکنش تکرارشونده "${escapeHtml(rc.desc)}" به مبلغ ${fmt(rc.amount)} تومان در تاریخ ${faFromIso(nextDue)} (فردا) است.`,
+        text: `موعد تراکنش تکرارشونده "${escapeHtml(rc.desc)}" به مبلغ ${fmt(rc.amount)} تومان (فردا) است.`,
         level: 'warn'
       });
       return; // برای جلوگیری از بررسی‌های اضافی اگر موعد اولیه فردا باشد
