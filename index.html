@@ -188,7 +188,7 @@
       </div>
       <div class="field" style="grid-column: span 2">
         <label>زیردسته</label>
-        <input id="subcat" class="input" placeholder="خوراکی، حمل‌ونقل...">
+        <select id="subcat" class="input"></select>
       </div>
       <div class="field" style="grid-column: span 2">
         <label>حساب/کیف پول</label>
@@ -292,6 +292,19 @@
         <button id="addWallet" class="btn-ghost">افزودن حساب</button>
       </div>
       <div id="walletList" class="row" style="margin-top:8px;flex-wrap:wrap"></div>
+
+      <div class="sep"></div>
+      <h4 style="margin:6px 0;color:var(--main)">مدیریت زیردسته‌ها</h4>
+      <div class="row">
+        <input id="newSubcatName" class="input" placeholder="نام زیردسته جدید">
+        <select id="newSubcatType" style="width:110px">
+          <option value="expense">هزینه</option>
+          <option value="income">درآمد</option>
+          <option value="saving">پس‌انداز</option>
+        </select>
+        <button id="addSubcatBtn" class="btn-ghost">افزودن</button>
+      </div>
+      <div id="subcatManager" class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px"></div>
     </div>
   </div>
 
@@ -346,25 +359,22 @@ function load() {
 const $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
 const els = {
   balance: $('#balance'), sumIncome: $('#sumIncome'), sumExpense: $('#sumExpense'), sumSaving: $('#sumSaving'),
-  form: $('#txForm'), desc: $('#desc'), amount: $('#amount'), category: $('#category'), subcat: $('#subcat'),
-  wallet: $('#wallet'), date: $('#date'), recurring: $('#recurring'), submitBtn: $('#submitBtn'), cancelEdit: $('#cancelEdit'),
+  form: $('#txForm'), desc: $('#desc'), amount: $('#amount'), category: $('#category'), subcat: $('#subcat'), wallet: $('#wallet'), date: $('#date'), recurring: $('#recurring'), submitBtn: $('#submitBtn'), cancelEdit: $('#cancelEdit'),
   fStart: $('#fStart'), fEnd: $('#fEnd'), fCat: $('#fCat'), fWallet: $('#fWallet'), fSearch: $('#fSearch'),
-  resetFilters: $('#resetFilters'), exportJson: $('#exportJson'), exportExcel: $('#exportExcel'), importCsv: $('#importCsv'),
-  tbody: $('#tbody'), table: $('#table'),
+  exportJson: $('#exportJson'), exportExcel: $('#exportExcel'), importCsv: $('#importCsv'),
   chartMain: $('#chartMain'), chartMonth: $('#chartMonth'),
   budgetSubcat: $('#budgetSubcat'), budgetAmount: $('#budgetAmount'), addBudget: $('#addBudget'), budgetList: $('#budgetList'),
   newWallet: $('#newWallet'), addWallet: $('#addWallet'), walletList: $('#walletList'),
   rcBody: $('#rcBody'),
-  darkToggle: $('#darkToggle'), backupBtn: $('#backupBtn'), restoreInput: $('#restoreInput'),
-  undoBtn: $('#undoBtn'),
-  notifBtn: $('#notifBtn'), notifPanel: $('#notifPanel'), notifList: $('#notifList'), notifCount: $('#notifCount'), notifClose: $('#notifClose')
+  darkToggle: $('#darkToggle'), undoBtn: $('#undoBtn'), backupBtn: $('#backupBtn'), restoreInput: $('#restoreInput'),
+  notifBtn: $('#notifBtn'), notifCount: $('#notifCount'), notifPanel: $('#notifPanel'), notifList: $('#notifList'), notifClose: $('#notifClose'),
+  newSubcatName: $('#newSubcatName'), newSubcatType: $('#newSubcatType'), addSubcatBtn: $('#addSubcatBtn'), subcatManager: $('#subcatManager'),
+  tbody: $('#tbody'),
 };
 const fmt = n => (Number(n) || 0).toLocaleString('fa-IR');
 const todayStr = () => new Date().toISOString().slice(0, 10);
-const monthKey = (dStr) => (dStr || todayStr()).slice(0, 7);
 function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
-const categoryIcons = { income: '💰', expense: '🛒', saving: '🏦' };
-function categoryLabel(c) { return `${categoryIcons[c] || ''} ${c === 'income' ? 'درآمد' : c === 'expense' ? 'هزینه' : c === 'saving' ? 'پس‌انداز' : c}`; }
+const categoryLabel = c => c === 'income' ? 'درآمد' : c === 'expense' ? 'هزینه' : c === 'saving' ? 'پس‌انداز' : c;
 
 // ======== PWA Register ========
 (function registerPWA() {
@@ -561,7 +571,7 @@ function renderTable(list) {
   }
 }
 
-// ======== Charts ========
+ // ======== Charts ========
 function drawMainChart(list) {
   const st = calcStats(list);
   const ctx = els.chartMain.getContext('2d');
@@ -594,7 +604,11 @@ function drawMonthChart() {
   });
 }
 
-// ======== Budgets ========
+ // ======== Budgets ========
+function monthKey() {
+  const d = new Date();
+  return d.toISOString().slice(0, 7); // مثال: 2025-12
+}
 function setBudget(subcat, amount) {
   const key = monthKey();
   if (!state.budgets[key]) state.budgets[key] = {};
@@ -653,7 +667,7 @@ function renderBudgets() {
       pushNotification({
         id: 'budget_' + b.sub + '_' + monthKey(),
         title: `هشدار بودجه: ${escapeHtml(b.sub)}`,
-        text: `هزینهٔ "${escapeHtml(b.sub)}" به ${pct}% از بودجهٔ ${fmt(b.limit)} رسیده — خرج‌شده ${fmt(b.spent)} تومان.`,
+        text: `هزینهٔ "${escapeHtml(b.sub)}" به ${pct}% از بودجهٔ ${fmt(b.limit)} رسیده    —     خرج‌شده ${fmt(b.spent)} تومان.`,  
         level: type
       });
     });
@@ -683,7 +697,7 @@ function buildRecurringReminders() {
       reminders.push({
         id: 'rc_' + rc.id + '_' + nextDue,
         title: `هشدار: نزدیک شدن به موعد تراکنش: ${escapeHtml(rc.desc)}`,
-        text: `موعد تراکنش تکرارشونده "${escapeHtml(rc.desc)}" به مبلغ ${fmt(rc.amount)} تومان (فردا) است.`,
+        text: `موعد تراکنش تکرارشونده "${escapeHtml(rc.desc)}" به مبلغ ${fmt(rc.amount)} تومان   (فردا) است.`,
         level: 'warn'
       });
       return; // برای جلوگیری از بررسی‌های اضافی اگر موعد اولیه فردا باشد
@@ -761,6 +775,7 @@ function resetForm() {
   state.editId = null;
   els.submitBtn.textContent = 'افزودن';
   els.cancelEdit.hidden = true;
+  updateSubcatDropdown();
 }
 els.form.addEventListener('submit', e => {
   e.preventDefault();
@@ -908,6 +923,104 @@ els.notifBtn.addEventListener('click', () => {
 });
 els.notifClose.addEventListener('click', () => { els.notifPanel.style.display = 'none'; els.notifPanel.setAttribute('aria-hidden', 'true'); });
 
+// ======== مدیریت زیردسته‌های مرکزی ========
+state.subcategories = state.subcategories || {
+  expense: ['خوراکی', 'حمل‌ونقل', 'قبض و شارژ', 'سرگرمی', 'بهداشت و درمان', 'آموزش'],
+  income: ['حقوق ماهانه', 'فریلنس', 'هدیه'],
+  saving: ['پس‌انداز اضطراری', 'سرمایه‌گذاری']
+};
+
+function renderSubcatManager() {
+  els.subcatManager.innerHTML = '';
+  const icons = { expense: 'هزینه', income: 'درآمد', saving: 'پس‌انداز' };
+
+  Object.keys(state.subcategories).forEach(cat => {
+    state.subcategories[cat].forEach((sub, i) => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.innerHTML = `${icons[cat]} ${escapeHtml(sub)} `;
+      const editBtn = document.createElement('button');
+      editBtn.className = 'actions';
+      editBtn.textContent = 'ویرایش';
+      editBtn.onclick = () => {
+        const newName = prompt('نام جدید زیردسته:', sub);
+        if (!newName || newName.trim() === sub) return;
+        if (state.subcategories[cat].includes(newName.trim())) return alert('این نام قبلاً وجود دارد');
+        pushUndo();
+        const trimmed = newName.trim();
+        state.subcategories[cat][i] = trimmed;
+        state.tx.forEach(t => {
+          if (t.category === cat && t.subcat === sub) t.subcat = trimmed;
+        });
+        save();
+        renderSubcatManager();
+        updateSubcatDropdown();
+      };
+      pill.appendChild(editBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'actions danger';
+      delBtn.textContent = 'حذف';
+      delBtn.onclick = () => {
+        const inUse = state.tx.some(t => t.category === cat && t.subcat === sub);
+        if (inUse && !confirm(`"${sub}" در تراکنش‌ها استفاده شده. با حذف، همه به "سایر" تبدیل می‌شوند. ادامه؟`)) return;
+        pushUndo();
+        if (inUse) {
+          state.tx.forEach(t => {
+            if (t.category === cat && t.subcat === sub) t.subcat = 'سایر';
+          });
+        }
+        state.subcategories[cat].splice(i, 1);
+        save();
+        renderSubcatManager();
+        updateSubcatDropdown();
+      };
+      pill.appendChild(delBtn);
+
+      els.subcatManager.appendChild(pill);
+    });
+  });
+}
+
+function updateSubcatDropdown() {
+  const current = els.subcat.value;
+  els.subcat.innerHTML = '<option value="">بدون زیردسته</option><option value="سایر">سایر</option>';
+  const cat = els.category.value;
+  if (state.subcategories[cat]) {
+    state.subcategories[cat].forEach(sub => {
+      const opt = document.createElement('option');
+      opt.value = sub;
+      opt.textContent = sub;
+      if (sub === current) opt.selected = true;
+      els.subcat.appendChild(opt);
+    });
+  }
+// اگر current در گزینه‌ها نبود، به '' برگردون
+  if (!els.subcat.querySelector(`option[value="${current}"]`)) {
+    els.subcat.value = '';
+  }
+}
+
+// رویدادها
+els.category.addEventListener('change', updateSubcatDropdown);
+
+els.addSubcatBtn.addEventListener('click', () => {
+  const name = els.newSubcatName.value.trim();
+  const type = els.newSubcatType.value;
+  if (!name) return alert('نام زیردسته را وارد کنید');
+  if (state.subcategories[type].includes(name)) return alert('این زیردسته قبلاً وجود دارد');
+  pushUndo();
+  state.subcategories[type].push(name);
+  els.newSubcatName.value = '';
+  save();
+  renderSubcatManager();
+  updateSubcatDropdown();
+});
+
+// اجرای اولیه هنگام بارگذاری برنامه
+renderSubcatManager();
+updateSubcatDropdown();
+
 // ======== Apply All ========
 function renderStats(list) {
   const st = calcStats(list);
@@ -937,7 +1050,9 @@ function init() {
   ensureDateDefault();
   applyTheme();
   renderWallets();
-  applyAll();
+  updateSubcatDropdown();
+  renderSubcatManager();
+applyAll();
 }
 init();
 </script>
